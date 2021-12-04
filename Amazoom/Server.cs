@@ -19,11 +19,12 @@ namespace Amazoom
         private static readonly byte[] buffer = new byte[BUFFER_SIZE];
         private static int orderID = 0;
 
-        private static Admin admin = new Admin();
+        private static Admin admin;
 
         static void Main()
         {
-            Console.Title = "Server";
+            //Console.Title = "Server";
+            admin = new Admin();
             SetupServer();
             Console.ReadLine(); // When we press enter close everything
             CloseAllSockets();
@@ -31,11 +32,11 @@ namespace Amazoom
 
         private static void SetupServer()
         {
-            Console.WriteLine("Setting up server...");
+            //Console.WriteLine("Setting up server...");
             serverSocket.Bind(new IPEndPoint(ipAddress, PORT));
             serverSocket.Listen(1);
             serverSocket.BeginAccept(AcceptCallback, null);
-            Console.WriteLine("Server setup complete");
+            //Console.WriteLine("Server setup complete");
         }
 
         /// <summary>
@@ -68,7 +69,7 @@ namespace Amazoom
 
             clientSockets.Add(socket);
             socket.BeginReceive(buffer, 0, BUFFER_SIZE, SocketFlags.None, ReceiveCallback, socket);
-            Console.WriteLine("Client connected, waiting for request...");
+            //Console.WriteLine("Client connected, waiting for request...");
             serverSocket.BeginAccept(AcceptCallback, null);
         }
 
@@ -76,6 +77,8 @@ namespace Amazoom
         {
             Socket current = (Socket)AR.AsyncState;
             int received;
+            bool restock = false;
+            Product restockProd = new Product();
 
             try
             {
@@ -83,7 +86,7 @@ namespace Amazoom
             }
             catch (SocketException)
             {
-                Console.WriteLine("Client forcefully disconnected");
+                //Console.WriteLine("Client forcefully disconnected");
                 // Don't shutdown because the socket may be disposed and its disconnected anyway.
                 current.Close();
                 clientSockets.Remove(current);
@@ -95,19 +98,18 @@ namespace Amazoom
             byte[] recBuf = new byte[received];
             Array.Copy(buffer, recBuf, received);
             string text = Encoding.ASCII.GetString(recBuf);
-            Console.WriteLine("Received Text: " + text);
+            //Console.WriteLine("Received Text: " + text);
 
             if (text.ToLower() == "get json")
             {
                 string fileName = "../../../catalogue.json";
                 string jsonString = File.ReadAllText(fileName);
 
-                Console.WriteLine("Text is a get json request");
+                //Console.WriteLine("Text is a get json request");
                 byte[] data = Encoding.ASCII.GetBytes(jsonString);
                 current.Send(data);
-                Console.WriteLine("json sent to client");
+                //Console.WriteLine("json sent to client");
 
-                //Product[] items = JsonSerializer.Deserialize<Product[]>(jsonString);
             }
             else
             {
@@ -125,7 +127,8 @@ namespace Amazoom
                         if(products[result].stock == 0)
                         {
                             //send no stock alert to admin
-                            admin.notifyAdmin(products[result]); 
+                            restock = true;
+                            restockProd = products[result];
                         }
 
                         if (i == 0)
@@ -149,16 +152,23 @@ namespace Amazoom
                     }
                 }
                 Computer.UpdateCatalog(products);
-                Console.WriteLine("Sending order to warehouse");
-                admin.sendOrder(new Order(orderID, orderItems, ""));
+                //Console.WriteLine("Sending order to warehouse");
+                //admin.sendOrder(new Order(orderID, orderItems, ""));
+
+                // Always Shutdown before closing
+                current.Shutdown(SocketShutdown.Both);
+                current.Close();
+                clientSockets.Remove(current);
+                //Console.WriteLine("Client disconnected");
+
+                if (restock == true)
+                {
+                    //admin.notifyAdmin(restockProd);
+                }
             }
 
 
-            // Always Shutdown before closing
-            current.Shutdown(SocketShutdown.Both);
-            current.Close();
-            clientSockets.Remove(current);
-            Console.WriteLine("Client disconnected");
+            
         }
     }
 }

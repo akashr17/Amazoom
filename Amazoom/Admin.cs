@@ -7,13 +7,13 @@ namespace Amazoom
     public class Admin
     {
         private static Computer warehouse;
-        
-        public Admin()
+
+        public void Main()
         {
             warehouse = new Computer();
             startAdmin();
         }
-
+        
         public void startAdmin()
         {
             while (true)
@@ -105,7 +105,7 @@ namespace Amazoom
             Console.WriteLine("------------------------------------");
             Console.WriteLine("|             *ALERT*              |");
             Console.WriteLine("------------------------------------");
-            Console.WriteLine("Product: {0}, ID: {2}, Is Out of Stock: Ordering More...", item.name, item.id);
+            Console.WriteLine("Product: {0}, ID: {1}, Is Out of Stock: Ordering More...", item.name, item.id);
 
             warehouse.ReadAndReplaceCatalogStock();
 
