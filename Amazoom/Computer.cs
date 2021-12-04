@@ -277,6 +277,7 @@ namespace Amazoom
         // After checking order is valid we need to change the order to a list of items (repeated items if multiple quantities)
         public void fulfillOrder(Order order)
         {
+            Console.WriteLine("Order {0}", order.id);
             setOrderStatus(order, this.ORDER_RECEIVED);
             orderLog.Add(order);
             if (orderIsValid(order)) //helper method to validate each order to confirm if all items are available
@@ -337,32 +338,43 @@ namespace Amazoom
          * */
         private bool orderIsValid(Order order)
         {
-            // should read catelog and see if we have each thing
-            Product[] catalog = ReadCatalog();
-            //Item[] inventory = ReadInventory();
+            List<Item> orderItems = orderToItems(order);
 
-            //Console.WriteLine(items);
+            int total_quantity = 0;
 
             foreach ((Product, int) product in order.products)
             {
-                int product_id = product.Item1.id;
-
-                int quantity = product.Item2;
-                foreach (Product catalog_product in catalog)
-                {
-                    // idk if we can use id can be used cause each product will have multiple stock items and each of those items has sep id
-                    if (product_id == catalog_product.id)
-                    {
-                        if (catalog_product.stock < quantity)
-                        {
-                            return false;
-                        }
-                        break;
-                    }
-
-                }
+                total_quantity += product.Item2;
             }
-            return true;
+            return (total_quantity == orderItems.Count);
+
+
+            //// should read catelog and see if we have each thing
+            //Product[] catalog = ReadCatalog();
+            ////Item[] inventory = ReadInventory();
+
+            ////Console.WriteLine(items);
+
+            //foreach ((Product, int) product in order.products)
+            //{
+            //    int product_id = product.Item1.id;
+
+            //    int quantity = product.Item2;
+            //    foreach (Product catalog_product in catalog)
+            //    {
+            //        // idk if we can use id can be used cause each product will have multiple stock items and each of those items has sep id
+            //        if (product_id == catalog_product.id)
+            //        {
+            //            if (catalog_product.stock < quantity)
+            //            {
+            //                return false;
+            //            }
+            //            break;
+            //        }
+
+            //    }
+            //}
+            //return true;
 
         }
 
@@ -438,13 +450,24 @@ namespace Amazoom
             {
                 this.dockingQueue.Enqueue(this.deliveryTruckQueue.Dequeue());
             }
+            
             while (this.dockingQueue.Peek().GetType() == typeof(RestockTruck))
             {
                 Console.WriteLine("Restock truck {0} has arrived", this.dockingQueue.Peek().id);
                 RestockTruckItems((RestockTruck)this.dockingQueue.Dequeue());
+                if (this.dockingQueue.Count == 0)
+                {
+                    break;
+                }
             }
 
-            DeliveryTruck currTruck = (DeliveryTruck)this.dockingQueue.Peek();
+            DeliveryTruck currTruck = new DeliveryTruck(-1,-1);
+
+            if (this.dockingQueue.Count > 0)
+            {
+                currTruck = (DeliveryTruck)this.dockingQueue.Peek();
+            }
+            
             //loadProcessedOrders(currTruck);
             return currTruck;
         }

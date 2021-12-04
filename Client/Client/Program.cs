@@ -360,6 +360,7 @@ namespace Amazoom
                 sendCart(cart);
             }
 
+            Console.Clear();
             displayStore(cart);
             
         }
