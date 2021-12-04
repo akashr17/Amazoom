@@ -100,6 +100,21 @@ namespace Amazoom
             displayAdmin();
         }
 
+        public void notifyAdmin(Product item)
+        {
+            Console.WriteLine("------------------------------------");
+            Console.WriteLine("|             *ALERT*              |");
+            Console.WriteLine("------------------------------------");
+            Console.WriteLine("Product: {0}, ID: {2}, Is Out of Stock: Ordering More...", item.name, item.id);
+
+            warehouse.ReadAndReplaceCatalogStock();
+
+            Console.WriteLine("------------------------------------");
+            Console.WriteLine("Press Enter to return to the console");
+            Console.ReadLine();
+            displayAdmin();
+        }
+
         public void sendOrder(Order order)
         {
             warehouse.fulfillOrder(order);

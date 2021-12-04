@@ -124,8 +124,8 @@ namespace Amazoom
 
                         if(products[result].stock == 0)
                         {
-                            //send alert to admin
-                            //restock in admin
+                            //send no stock alert to admin
+                            admin.notifyAdmin(products[result]); 
                         }
 
                         if (i == 0)
