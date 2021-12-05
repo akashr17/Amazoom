@@ -52,32 +52,47 @@ namespace Amazoom
                 if (this.currentLoad + currItem.Item1.weight <= this.maxLoadingCap)
                 {
                     this.robotQueue.Dequeue();
-                    this.location = currShelf.shelfLocation.location; //location of a specific item within our warehouse grid
-                    for (int i = 0; i < currShelf.items.Count; i++) //iterate over items in that shelf and remove item being processed
+                    bool isEmpty = Computer.gridCellMutices[currShelf.shelfLocation.location[0], currShelf.shelfLocation.location[0]].WaitOne(100);
+                    if (isEmpty)
                     {
-                        if (currShelf.items[i].id == currItem.Item1.id)
+                        this.location = currShelf.shelfLocation.location; //location of a specific item within our warehouse grid
+                        for (int i = 0; i < currShelf.items.Count; i++) //iterate over items in that shelf and remove item being processed
                         {
-                            currShelf.items.RemoveAt(i);
-                            currShelf.currWeight -= currItem.Item1.weight;
-                            //int idx = currInventory.FindIndex(a => a == currItem.Item1);
-                            for(int j=0; j < currInventory.Count; j++)
+                            if (currShelf.items[i].id == currItem.Item1.id)
                             {
-                                if(currInventory[j].id == currItem.Item1.id)
+                                currShelf.items.RemoveAt(i);
+                                currShelf.currWeight -= currItem.Item1.weight;
+                                //int idx = currInventory.FindIndex(a => a == currItem.Item1);
+                                for (int j = 0; j < currInventory.Count; j++)
                                 {
-                                    currInventory.RemoveAt(j);
-                                    break;
+                                    if (currInventory[j].id == currItem.Item1.id)
+                                    {
+                                        currInventory.RemoveAt(j);
+                                        break;
+                                    }
                                 }
-                            }
-                            
 
+
+                            }
                         }
+                        this.currentLoad += currItem.Item1.weight;
+                        Computer.gridCellMutices[currShelf.shelfLocation.location[0], currShelf.shelfLocation.location[0]].ReleaseMutex();
                     }
-                    this.currentLoad += currItem.Item1.weight;
+                    else
+                    {
+                        this.robotQueue.Enqueue(this.robotQueue.Dequeue());
+                    }
                 }
                 else
                 {
-                    //*****move robot to dock, drop stuff off at bin, come back for remaining items
-                    this.location = new int[2] {0,0}; //this location should be wherever we de-load our items if robot capacity is full
+                    //move robot to dock, drop stuff off at bin, come back for remaining items
+                    bool isEmpty = Computer.gridCellMutices[Computer.numRows - 1, Computer.numCols - 1].WaitOne(100);
+                    if (isEmpty)
+                    {
+                        this.location = new int[2] { Computer.numRows - 1, Computer.numCols - 1 }; //this location should be wherever we de-load our items if robot capacity is full
+                        Computer.gridCellMutices[Computer.numRows - 1, Computer.numCols - 1].ReleaseMutex();
+                    }
+                    
                     this.currentLoad = 0.0; //reset load
 
                 }
