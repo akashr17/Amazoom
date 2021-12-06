@@ -7,7 +7,6 @@ namespace Amazoom
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("TEST STARTED");
             //Computer comp = new Computer();
 
             //Product prod1 = new Product("b", 100, 99);
@@ -31,7 +30,12 @@ namespace Amazoom
             //Order testOrder3 = new Order(3, orderItems3, "");
             //comp.fulfillOrder(testOrder3);
             //comp.ReadAndReplaceCatalogStock();
-            Console.WriteLine((int)DateTime.Now.Subtract(new DateTime(1970, 1, 1)).TotalSeconds);
+            Console.WriteLine("TEST STARTED");
+            ComputerTests test = new ComputerTests();
+            test.TestAddCatalogProducts();
+            test.TestRestockInventory();
+            test.TestOrderValidation();
+            //Console.WriteLine((int)DateTime.Now.Subtract(new DateTime(1970, 1, 1)).TotalSeconds);
             Console.WriteLine("test complete");
 
         }
