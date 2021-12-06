@@ -127,7 +127,8 @@ namespace Amazoom
     public class Computer
     {
         public Shelf[] shelves;
-        public List<Robot> robots = new List<Robot>();
+        public List<Robot> workingRobots = new List<Robot>();
+        public Queue<Robot> standbyRobots = new Queue<Robot>();
         public Truck[] trucks;
         private Thread[] threads;
         public static Mutex[,] gridCellMutices;
@@ -158,26 +159,24 @@ namespace Amazoom
         {
             //initialize warehouse shelves, robots, and trucks
             initializeShelves();
-            //initializeRobots();
+            initializeRobots();
             initializeTrucks();
-            this.threads = new Thread[this.numRobots];
-
         }
 
         /*
          * @return: void
          * initialize robots for our warehouse. Potentially spin new threads for each robot to handle orders simulatenously
          * */
-        //private void initializeRobots()
-        //{
-        //    //currently initializing 5 robots on the same thread. Could spin a new thread for each robot to handle its own orders
-        //    this.robots = new Robot[this.numRobots];
-        //    for (int i = 0; i < this.numRobots; i++)
-        //    {
-        //        this.robots[i] = new Robot(0, new int[] { 0, 0 });
-        //    }
+        private void initializeRobots()
+        {
+            this.threads = new Thread[this.numRobots];
+            //currently initializing 5 robots on the same thread. Could spin a new thread for each robot to handle its own orders
+            for (int i = 0; i < this.numRobots; i++)
+            {
+                this.standbyRobots.Enqueue(new Robot(i, new int[] { -1, -1 }));
+            }
 
-        //}
+        }
 
         /*
          * @return: void
@@ -304,26 +303,28 @@ namespace Amazoom
                 Robot tempRobot = null;
                 while(tempRobot == null)
                 {
-                    if (this.robots.Count < this.numRobots)
+                    if (this.standbyRobots.Count > 0)
                     {
-                        tempRobot = new Robot(this.robots.Count, new int[] { 0, 0 });
-                        this.robots.Add(tempRobot);
-                        this.threads[this.robots.Count] = new Thread(() => collectOrder(tempRobot,order));
-                        this.threads[this.robots.Count].Start();
+                        tempRobot = this.standbyRobots.Dequeue();
+                        this.threads[this.workingRobots.Count] = new Thread(() => collectOrder(tempRobot,order));
+                        this.threads[this.workingRobots.Count].Start();
+                        this.workingRobots.Add(tempRobot);
 
                     }
 
                 }
-                for (int i = 0; i < this.robots.Count; i++)
+                for (int i = 0; i < this.workingRobots.Count; i++)
                 {
                     int currIdx = i;
                     this.threads[currIdx].Join();
                 }
 
-                for (int i = 0; i < this.robots.Count; i++)
+
+                for (int i = 0; i < this.workingRobots.Count; i++)
                 {
-                    this.robots.Clear();
+                    this.standbyRobots.Enqueue(this.workingRobots[i]);
                 }
+                this.workingRobots.Clear();
 
                 setOrderStatus(order, this.ORDER_FULFILLED);
                 bool needNewTruck = true;
@@ -475,6 +476,7 @@ namespace Amazoom
                 
             }
             DeliveryTruck tempTruck2 = (DeliveryTruck)this.dockingQueue.Dequeue();
+            serviceNextTruck();
             Thread deliveryThread2 = new Thread(() => deliverOrders(tempTruck2));
             deliveryThread2.Start();
 
@@ -510,14 +512,17 @@ namespace Amazoom
                 }
 
             }
-            
-            while (this.dockingQueue.Peek().GetType() == typeof(RestockTruck))
+
+            if (this.dockingQueue.Count > 0)
             {
-                Console.WriteLine("Restock truck {0} has arrived", this.dockingQueue.Peek().id);
-                RestockTruckItems((RestockTruck)this.dockingQueue.Dequeue());
-                if (this.dockingQueue.Count == 0)
+                while (this.dockingQueue.Peek().GetType() == typeof(RestockTruck))
                 {
-                    break;
+                    Console.WriteLine("Restock truck {0} has arrived", this.dockingQueue.Peek().id);
+                    RestockTruckItems((RestockTruck)this.dockingQueue.Dequeue());
+                    if (this.dockingQueue.Count == 0)
+                    {
+                        break;
+                    }
                 }
             }
 
@@ -634,10 +639,10 @@ namespace Amazoom
                         availableRestockTruck = this.restockTruckQueue.Dequeue();
                         break;
                     }
-                    else
-                    {
-                        serviceNextTruck(); //no restock truck available, service the dockingQueue trucks first and wait till restock truck put back into restockTruck queue
-                    }
+                    //else
+                    //{
+                    //    serviceNextTruck(); //no restock truck available, service the dockingQueue trucks first and wait till restock truck put back into restockTruck queue
+                    //}
                 }
 
                 availableRestockTruck.items = productToRestock; //assign a truck to bring in the inventory that needs to be replaced

@@ -49,13 +49,14 @@ namespace Amazoom
             {
                 (Item, Shelf) currItem = this.robotQueue.Peek();
                 Shelf currShelf = currItem.Item2;
-                if (this.currentLoad + currItem.Item1.weight <= this.maxLoadingCap)
+                if (this.currentLoad + currItem.Item1.weight <= this.maxLoadingCap && this.currBatteryLevel > 0)
                 {
                     this.robotQueue.Dequeue();
                     bool isEmpty = Computer.gridCellMutices[currShelf.shelfLocation.location[0], currShelf.shelfLocation.location[0]].WaitOne(100);
                     if (isEmpty)
                     {
                         this.location = currShelf.shelfLocation.location; //location of a specific item within our warehouse grid
+                        this.currBatteryLevel -= 1;
                         for (int i = 0; i < currShelf.items.Count; i++) //iterate over items in that shelf and remove item being processed
                         {
                             if (currShelf.items[i].id == currItem.Item1.id)
@@ -83,6 +84,10 @@ namespace Amazoom
                         this.robotQueue.Enqueue(this.robotQueue.Dequeue());
                     }
                 }
+                else if(this.currBatteryLevel == 0)
+                {
+                    rechargeBattery();
+                }
                 else
                 {
                     //move robot to dock, drop stuff off at bin, come back for remaining items
@@ -98,11 +103,18 @@ namespace Amazoom
                 }
             }
             //order completed, queue item for delivery
+            this.location = new int[2] { -1, -1 };
             Computer.processedOrders.Enqueue(order);
             Computer.UpdateInventory(currInventory);
             return;
         }
 
+        private void rechargeBattery()
+        {
+            this.location = new int[2]{-1,-1}; //move rebot to charging station for battery replacement outside of the warehouse
+            this.currBatteryLevel = 100.0;
+            return;
+        }
 
         //setters and getters
         public void setActiveStatus(bool isActive)
