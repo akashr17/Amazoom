@@ -41,9 +41,8 @@ namespace Amazoom
          * @return: void
          * move robot to item's location in warehouse and retrieve item. Decrement inventory
          * */
-        public void getOrder(Order order)
+        public void getOrder()
         {
-            List<Item> currInventory = Computer.ReadInventory();
             //process all items of current order in queue
             while (this.robotQueue.Count > 0)
             {
@@ -63,15 +62,6 @@ namespace Amazoom
                             {
                                 currShelf.items.RemoveAt(i);
                                 currShelf.currWeight -= currItem.Item1.weight;
-                                //int idx = currInventory.FindIndex(a => a == currItem.Item1);
-                                for (int j = 0; j < currInventory.Count; j++)
-                                {
-                                    if (currInventory[j].id == currItem.Item1.id)
-                                    {
-                                        currInventory.RemoveAt(j);
-                                        break;
-                                    }
-                                }
 
 
                             }
@@ -104,8 +94,6 @@ namespace Amazoom
             }
             //order completed, queue item for delivery
             this.location = new int[2] { -1, -1 };
-            Computer.processedOrders.Enqueue(order);
-            Computer.UpdateInventory(currInventory);
             return;
         }
 
@@ -145,6 +133,15 @@ namespace Amazoom
         public double getBatteryLevel()
         {
             return this.currBatteryLevel;
+        }
+        public int getId()
+        {
+            return this.id;
+        }
+
+        public bool queueIsEmpty()
+        {
+            return this.robotQueue.Count == 0;
         }
 
     }
